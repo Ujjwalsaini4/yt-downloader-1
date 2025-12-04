@@ -993,8 +993,7 @@ def run_download(job: Job, url: str, fmt_key: str, filename: str = None, video_r
             abitrate = None
 
         if fmt_key == "audio":
-          #  fmt = "bestaudio[ext=m4a]/bestaudio/best"
-            fmt = "best[vcodec!=none][ext=mp4]"
+            fmt = "bestaudio[ext=m4a]/bestaudio/best"
 
         else:
             fmt = _build_video_format(vres)
