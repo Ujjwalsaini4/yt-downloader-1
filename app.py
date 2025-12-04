@@ -253,7 +253,7 @@ header{
   position:fixed;
   left:0;
   right:0;
-  top:80px;           /* agar thoda upar/neeche chahiye ho to 76/84 try kar sakte ho */
+  top:100px;           /* agar thoda upar/neeche chahiye ho to 76/84 try kar sakte ho */
   z-index:40;
   padding:0 16px;
 }
@@ -653,21 +653,27 @@ footer{
       <div class="howto-badge">1</div>
       <h3 style="margin:10px 0 4px;font-size:15px;">Copy the video link</h3>
       <p class="section-text" style="font-size:13px;">Open your favourite platform, copy the video URL from the browser address bar or share menu.</p>
-      <div class="howto-illus" aria-hidden="true"></div>
+      <div class="howto-illus">
+        <img src="/static/s1.jpg" alt="Start download and watch progress bar">
+      </div>
     </div>
 
     <div class="howto-item">
       <div class="howto-badge">2</div>
       <h3 style="margin:10px 0 4px;font-size:15px;">Paste & choose format</h3>
       <p class="section-text" style="font-size:13px;">Paste the link in the box above, select video or audio, choose quality and bitrate as you like.</p>
-      <div class="howto-illus" aria-hidden="true"></div>
+      <div class="howto-illus">
+        <img src="/static/p2.jpg" alt="Start download and watch progress bar">
+      </div>
     </div>
 
     <div class="howto-item">
       <div class="howto-badge">3</div>
       <h3 style="margin:10px 0 4px;font-size:15px;">Start download</h3>
       <p class="section-text" style="font-size:13px;">Click on <strong>Start Download</strong> and wait. Progress, speed and estimated time will update in real time.</p>
-      <div class="howto-illus" aria-hidden="true"></div>
+      <div class="howto-illus">
+        <img src="/static/p3.jpg" alt="Start download and watch progress bar">
+      </div>
     </div>
   </div>
 </section>
@@ -1311,6 +1317,10 @@ def cleanup_worker():
 
 
 threading.Thread(target=cleanup_worker, daemon=True).start()
+
+@app.get("/p1")
+def p1():
+    return send_file("pages/p1.html")
 
 # ----- SEO ROUTES (SITEMAP + ROBOTS) -----
 
