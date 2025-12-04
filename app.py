@@ -418,23 +418,16 @@ button[disabled]{opacity:.6;cursor:not-allowed;}
   margin-top:10px;
   height:90px;
   border-radius:12px;
-  background:
-    radial-gradient(circle at 10% 0%, rgba(37,99,235,0.5), transparent),
-    radial-gradient(circle at 90% 100%, rgba(6,182,212,0.5), transparent),
-    #050b16;
+  background:#050b16;
   position:relative;
   overflow:hidden;
 }
-.howto-illus::after{
-  content:"Illustration";
-  position:absolute;
-  inset:0;
-  display:grid;
-  place-items:center;
-  font-size:11px;
-  letter-spacing:0.08em;
-  text-transform:uppercase;
-  color:rgba(232,240,255,0.7);
+/* naya: image ko nicely fit karne ke liye */
+.howto-illus img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
 }
 
 /* FEATURE LISTS */
@@ -654,7 +647,7 @@ footer{
       <h3 style="margin:10px 0 4px;font-size:15px;">Copy the video link</h3>
       <p class="section-text" style="font-size:13px;">Open your favourite platform, copy the video URL from the browser address bar or share menu.</p>
       <div class="howto-illus">
-        <img src="/static/s1.jpg" alt="Start download and watch progress bar">
+        <img src="/static/s1.png" alt="Start download and watch progress bar">
       </div>
     </div>
 
