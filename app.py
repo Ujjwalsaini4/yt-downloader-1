@@ -63,7 +63,7 @@ HTML = """<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 
 <!-- Google Search Console verification -->
-<meta name="google-site-verification" content="QYJJCjvAqrNJt6dOIKPbj_8jnL2m_nC52WBsOPgSTpQ" />
+<meta name="google-site-verification" content="1AuNvNUnn9vFYfFV-MOtNtiUGA4PHe4YOVoa3PyDd7A" />
 
 <!-- Basic SEO -->
 <meta name="description" content="Free online video downloader for YouTube, Instagram, Facebook, Twitter, TikTok and Dailymotion. Download MP4 or MP3 in HD quality with Hyper Downloader.">
