@@ -191,24 +191,28 @@ header{
 
 /* MOBILE HAMBURGER */
 .nav-toggle{
-  display:none;
-  width:34px;
-  height:34px;
+  display:none;              /* default hidden: desktop */
+  width:36px;
+  height:36px;
   border-radius:999px;
   border:1px solid rgba(255,255,255,0.12);
   background:rgba(5,11,22,0.9);
-  display:none;
   align-items:center;
   justify-content:center;
   cursor:pointer;
+  padding:0;
 }
+
 .nav-toggle span{
+  position:relative;
   width:18px;
   height:2px;
   border-radius:999px;
   background:#e5ecff;
-  position:relative;
+  display:block;
 }
+
+/* 3 lines (upper + lower) */
 .nav-toggle span::before,
 .nav-toggle span::after{
   content:"";
@@ -218,20 +222,30 @@ header{
   height:2px;
   border-radius:999px;
   background:#e5ecff;
+  transition:transform .18s ease, opacity .18s ease;
 }
-.nav-toggle span::before{top:-5px;}
-.nav-toggle span::after{top:5px;}
+
+/* upper line */
+.nav-toggle span::before{
+  transform:translateY(-6px);
+}
+
+/* lower line */
+.nav-toggle span::after{
+  transform:translateY(6px);
+}
+
+/* open state => cross (X) */
 .nav-toggle.open span{
   background:transparent;
 }
 .nav-toggle.open span::before{
-  top:0;
   transform:rotate(45deg);
 }
 .nav-toggle.open span::after{
-  top:0;
   transform:rotate(-45deg);
 }
+
 
 /* MOBILE NAV PANEL (fixed) */
 .nav-panel{
@@ -239,31 +253,35 @@ header{
   position:fixed;
   left:0;
   right:0;
-  top:80px;           /* header ke just niche */
+  top:80px;           /* agar thoda upar/neeche chahiye ho to 76/84 try kar sakte ho */
   z-index:40;
   padding:0 16px;
 }
+
 .nav-panel-inner{
   background:rgba(5,11,22,0.98);
   border-radius:var(--radius);
   border:1px solid rgba(255,255,255,0.08);
   box-shadow:0 18px 40px rgba(0,0,0,0.8);
-  padding:10px;
+  padding:14px 12px 16px;    /* top-bottom zyada */
   backdrop-filter:blur(10px);
 }
+
 .nav-panel a{
   display:flex;
   align-items:center;
   gap:8px;
-  padding:8px 10px;
+  padding:10px 12px;        /* button thoda mota */
   border-radius:10px;
   text-decoration:none;
   font-size:13px;
   color:var(--muted);
   border:1px solid transparent;
+  margin-bottom:4px;
 }
-.nav-panel a .icon{
-  font-size:14px;
+
+.nav-panel a:last-child{
+  margin-bottom:0;
 }
 .nav-panel a:hover{
   background:rgba(37,99,235,0.25);
