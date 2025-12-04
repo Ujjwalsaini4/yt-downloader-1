@@ -9,6 +9,7 @@ import uuid
 import re
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+
 from flask import Flask, request, jsonify, render_template_string, abort, send_file
 from shutil import which
 from yt_dlp import YoutubeDL
@@ -47,24 +48,36 @@ def ffmpeg_path():
 
 _FFMPEG = ffmpeg_path()
 if _FFMPEG:
-    try:
-        HAS_FFMPEG = True
-    except Exception:
-        HAS_FFMPEG = False
+    HAS_FFMPEG = True
 else:
     HAS_FFMPEG = False
 
 if DEBUG_LOG:
     print(f"[DEBUG] ffmpeg found: {HAS_FFMPEG} (path={_FFMPEG})")
 
-# ---------- HTML (with separate mobile nav panel) ----------
+# ---------- HTML (SEO + legal + responsive navbar) ----------
 HTML = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+<!-- Google Search Console verification -->
 <meta name="google-site-verification" content="QYJJCjvAqrNJt6dOIKPbj_8jnL2m_nC52WBsOPgSTpQ" />
-<meta name="description" content="Download YouTube, Instagram, Facebook, Twitter, TikTok and Dailymotion videos in MP3 or MP4 formats. Fast, safe and free online downloader.">
+
+<!-- Basic SEO -->
+<meta name="description" content="Free online video downloader for YouTube, Instagram, Facebook, Twitter, TikTok and Dailymotion. Download MP4 or MP3 in HD quality with Hyper Downloader.">
+
+<!-- Indexing & canonical -->
+<meta name="robots" content="index,follow" />
+<link rel="canonical" href="https://yt-downloader-s52z.onrender.com/" />
+
+<!-- Open Graph (social share) -->
+<meta property="og:title" content="YouTube & Instagram Video Downloader Online | Hyper Downloader">
+<meta property="og:description" content="Download YouTube, Instagram, Facebook, Twitter, TikTok and Dailymotion videos as MP4 or MP3. Fast, free and easy-to-use online video downloader.">
+<meta property="og:url" content="https://yt-downloader-s52z.onrender.com/">
+<meta property="og:type" content="website">
+
 <title>YouTube Video Downloader Online | Hyper Downloader</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -101,11 +114,11 @@ body{
 }
 
 .wrap{max-width:960px;margin:auto;}
-h1,h2{margin:0;font-weight:800;}
+h1,h2,h3{margin:0;font-weight:800;}
 h2{font-size:22px;}
 .small{font-size:13px;color:var(--muted);}
 
-/* HEADER */
+/* HEADER + NAVBAR */
 header{
   display:flex;
   align-items:center;
@@ -119,7 +132,7 @@ header{
   backdrop-filter:blur(8px) saturate(120%);
   position:sticky;
   top:clamp(8px,1.5vw,16px);
-  z-index:20;
+  z-index:30;
 }
 .brand{display:flex;align-items:center;gap:12px;}
 .logo{
@@ -141,7 +154,7 @@ header{
   color:transparent;
 }
 
-/* DESKTOP NAVBAR */
+/* MAIN NAV (desktop) */
 .nav-desktop{
   display:flex;
   flex-wrap:wrap;
@@ -176,44 +189,38 @@ header{
   border-color:transparent;
 }
 
-/* HAMBURGER BUTTON (mobile) */
+/* MOBILE HAMBURGER */
 .nav-toggle{
   display:none;
   width:34px;
   height:34px;
   border-radius:999px;
   border:1px solid rgba(255,255,255,0.12);
-  background:rgba(255,255,255,0.02);
-  cursor:pointer;
+  background:rgba(5,11,22,0.9);
+  display:none;
   align-items:center;
   justify-content:center;
-  padding:0;
+  cursor:pointer;
 }
 .nav-toggle span{
-  position:relative;
-  width:16px;
+  width:18px;
   height:2px;
   border-radius:999px;
-  background:#e5e7eb;
-  display:block;
+  background:#e5ecff;
+  position:relative;
 }
 .nav-toggle span::before,
 .nav-toggle span::after{
   content:"";
   position:absolute;
   left:0;
-  width:16px;
+  width:18px;
   height:2px;
   border-radius:999px;
-  background:#e5e7eb;
-  transition:transform .18s ease, top .18s ease, opacity .18s ease;
+  background:#e5ecff;
 }
-.nav-toggle span::before{
-  top:-5px;
-}
-.nav-toggle span::after{
-  top:5px;
-}
+.nav-toggle span::before{top:-5px;}
+.nav-toggle span::after{top:5px;}
 .nav-toggle.open span{
   background:transparent;
 }
@@ -226,21 +233,23 @@ header{
   transform:rotate(-45deg);
 }
 
-/* MOBILE NAV PANEL (separate card under header) */
+/* MOBILE NAV PANEL (fixed) */
 .nav-panel{
   display:none;
-  margin-top:10px;
+  position:fixed;
+  left:0;
+  right:0;
+  top:80px;           /* header ke just niche */
+  z-index:40;
+  padding:0 16px;
 }
 .nav-panel-inner{
-  background: #0A192A;
+  background:rgba(5,11,22,0.98);
   border-radius:var(--radius);
-  border:1px solid rgba(255,255,255,0.06);
-  box-shadow:0 12px 30px rgba(0,0,0,0.6);
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow:0 18px 40px rgba(0,0,0,0.8);
   padding:10px;
-  position: fixed;
-  width: -webkit-fill-available;
-  z-index: 1;
-  margin-inline-end: 15px;
+  backdrop-filter:blur(10px);
 }
 .nav-panel a{
   display:flex;
@@ -296,7 +305,7 @@ button:active{transform:scale(.98);}
 button[disabled]{opacity:.6;cursor:not-allowed;}
 
 .grid{display:grid;gap:12px;margin:10px 0px;}
-@media(min-width:700px){.grid{grid-template-columns:2fr 1fr 1.2fr auto;align-items:end;}}
+@media(min-width:700px){.grid{grid-template-columns:2fr 1fr 1.2fr 1.2fr auto;align-items:end;}}
 .full{grid-column:1/-1;}
 
 .progress{
@@ -391,16 +400,23 @@ button[disabled]{opacity:.6;cursor:not-allowed;}
   margin-top:10px;
   height:90px;
   border-radius:12px;
-  background:#050b16;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(37,99,235,0.5), transparent),
+    radial-gradient(circle at 90% 100%, rgba(6,182,212,0.5), transparent),
+    #050b16;
   position:relative;
   overflow:hidden;
 }
-/* naya: image ko nicely fit karne ke liye */
-.howto-illus img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  display:block;
+.howto-illus::after{
+  content:"Illustration";
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  font-size:11px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:rgba(232,240,255,0.7);
 }
 
 /* FEATURE LISTS */
@@ -468,24 +484,19 @@ footer{
 /* RESPONSIVE */
 @media(max-width:720px){
   header{
-    flex-direction:row;
-    align-items:center;
+    gap:10px;
   }
-
+  .nav-desktop{
+    display:none;
+  }
   .nav-toggle{
     display:inline-flex;
     margin-left:auto;
   }
-
-  .nav-desktop{
-    display:none;
-  }
-
   .nav-panel.open{
     display:block;
   }
 }
-
 @media(max-width:520px){
   .eta-pill{min-width:72px;padding:6px 10px;font-size:12px}
   .brand-title h1{font-size:18px}
@@ -494,11 +505,13 @@ footer{
 </head>
 <body>
 <div class="wrap">
-
 <header>
   <div class="brand">
     <div class="logo">HD</div>
-    <div class="brand-title"><h1>Hyper <span>Downloader</span></h1></div>
+    <div class="brand-title">
+      <!-- Single main H1 for SEO -->
+      <h1>Hyper <span>Downloader</span></h1>
+    </div>
   </div>
 
   <!-- Desktop nav -->
@@ -512,15 +525,15 @@ footer{
   </nav>
 
   <!-- Mobile hamburger -->
-  <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
+  <button class="nav-toggle" type="button" aria-label="Toggle navigation">
     <span></span>
   </button>
 </header>
 
-<!-- Mobile nav panel (separate div) -->
-<div class="nav-panel" id="navPanel">
+<!-- Mobile nav drawer -->
+<div class="nav-panel" id="mobileNav">
   <div class="nav-panel-inner">
-    <a href="#youtube"><span class="icon">▶</span><span>YouTube</span></a>
+    <a href="#youtube" class="active"><span class="icon">▶</span><span>YouTube</span></a>
     <a href="#instagram"><span class="icon">📸</span><span>Instagram</span></a>
     <a href="#facebook"><span class="icon">📘</span><span>Facebook</span></a>
     <a href="#twitter"><span class="icon">🐦</span><span>Twitter</span></a>
@@ -530,22 +543,20 @@ footer{
 </div>
 
 <main class="card" id="top">
-  <div style="
-      display:flex;
-      align-items:center;
-      gap:8px;
-      flex-wrap:wrap;
-  ">
-      <h1 style="color:#FF0000; margin:0; white-space:nowrap;">Youtube</h1>
-      <h2 style="margin:0; white-space:nowrap;">&</h2>
-      <h1 class="instagram-text" style="margin:0;">Instagram</h1>
-      <h2 style="margin:0; white-space:nowrap;">Video Downloader</h2>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <!-- Hero line as H2 (H1 already in header) -->
+      <h2 style="margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
+        <span style="color:#FF0000; white-space:nowrap;">YouTube</span>
+        <span>&amp;</span>
+        <span class="instagram-text" style="white-space:nowrap;">Instagram</span>
+        <span style="white-space:nowrap;">Video Downloader</span>
+      </h2>
   </div>
-  <p class="small">Paste your link, select format, and start. Progress and speed show in real-time.</p>
+  <p class="small">Paste your link, select format, and start. Progress and speed show in real-time. Use it only for content you are allowed to download.</p>
 
   <div id="preview" class="preview">
     <div class="preview-row">
-      <img id="thumb" class="thumb" alt="">
+      <img id="thumb" class="thumb" alt="Video thumbnail preview">
       <div class="meta">
         <div id="pTitle" class="title"></div>
         <div id="pSub" class="sub"></div>
@@ -624,27 +635,21 @@ footer{
       <div class="howto-badge">1</div>
       <h3 style="margin:10px 0 4px;font-size:15px;">Copy the video link</h3>
       <p class="section-text" style="font-size:13px;">Open your favourite platform, copy the video URL from the browser address bar or share menu.</p>
-      <div class="howto-illus">
-        <img src="/static/s1.png" alt="Copy the YouTube link from share menu">
-      </div>
+      <div class="howto-illus" aria-hidden="true"></div>
     </div>
 
     <div class="howto-item">
       <div class="howto-badge">2</div>
       <h3 style="margin:10px 0 4px;font-size:15px;">Paste & choose format</h3>
       <p class="section-text" style="font-size:13px;">Paste the link in the box above, select video or audio, choose quality and bitrate as you like.</p>
-      <div class="howto-illus">
-        <img src="/static/p2.jpg" alt="Paste link in Hyper Downloader and choose format">
-      </div>
+      <div class="howto-illus" aria-hidden="true"></div>
     </div>
 
     <div class="howto-item">
       <div class="howto-badge">3</div>
       <h3 style="margin:10px 0 4px;font-size:15px;">Start download</h3>
       <p class="section-text" style="font-size:13px;">Click on <strong>Start Download</strong> and wait. Progress, speed and estimated time will update in real time.</p>
-      <div class="howto-illus">
-        <img src="/static/p3.jpg" alt="Start download and watch progress bar">
-      </div>
+      <div class="howto-illus" aria-hidden="true"></div>
     </div>
   </div>
 </section>
@@ -656,7 +661,7 @@ footer{
   </p>
   <ul class="list">
     <li>Works with standard videos, music videos, tutorials and more.</li>
-    <li>Merge best video and best audio into a single high-quality file.</li>
+    <li>Merge best video and best audio into a single high-quality file (when technically possible).</li>
     <li>No software installation required – everything runs in your browser.</li>
   </ul>
 </section>
@@ -669,7 +674,7 @@ footer{
   <ul class="list">
     <li>Paste any public Instagram video or Reels link.</li>
     <li>Convert to MP4 video or extract MP3 audio.</li>
-    <li>Gradient Instagram styling for better recognition in the UI.</li>
+    <li>Use only for content that you are allowed to download.</li>
   </ul>
 </section>
 
@@ -693,7 +698,7 @@ footer{
   <ul class="list">
     <li>Copy tweet link and paste it in the video URL field.</li>
     <li>Export as MP4 video or MP3 audio.</li>
-    <li>Ideal for saving clips, memes and short videos.</li>
+    <li>Ideal for saving clips, memes and short videos that you are allowed to reuse.</li>
   </ul>
 </section>
 
@@ -705,7 +710,7 @@ footer{
   <ul class="list">
     <li>Paste TikTok video links into the downloader.</li>
     <li>Support for different qualities (where available).</li>
-    <li>Use only for personal use and follow TikTok guidelines.</li>
+    <li>Use only for personal, lawful use and follow TikTok guidelines.</li>
   </ul>
 </section>
 
@@ -745,21 +750,73 @@ footer{
   </div>
   <div class="faq-item">
     <div class="faq-q">Can I download private or paid content?</div>
-    <div class="faq-a">No. Hyper Downloader is intended only for publicly accessible videos. Do not use it to download private, paid or DRM-protected content.</div>
+    <div class="faq-a">
+      No. Hyper Downloader is intended only for publicly accessible videos and content that you have permission to download.
+      Do not use it to download private, paid, DRM-protected or otherwise restricted content.
+    </div>
   </div>
 </section>
 
+<section class="card" id="privacy">
+  <h2 class="section-title">Privacy Policy</h2>
+  <p class="section-text">
+    We respect your privacy. Hyper Downloader does not require account creation or personal registration to use the basic features.
+  </p>
+  <ul class="list">
+    <li>We may log technical information (such as IP address, browser type and error logs) to keep the service secure and to improve performance.</li>
+    <li>Links you submit are processed only for the purpose of generating downloadable media files.</li>
+    <li>We do not claim ownership over any content you download. All rights remain with the original content owners.</li>
+    <li>Third-party analytics or advertising tools, if used, may set their own cookies and collect usage statistics.</li>
+  </ul>
+  <p class="section-text" style="margin-top:10px;">
+    By using this website, you agree to this Privacy Policy. This page may be updated occasionally; please review it from time to time.
+  </p>
+</section>
 
+<section class="card" id="terms">
+  <h2 class="section-title">Terms of Service</h2>
+  <ul class="list">
+    <li>You are solely responsible for how you use downloaded content.</li>
+    <li>Only download videos that you have the legal right to download (for example, your own content or content under a licence that permits downloading).</li>
+    <li>Do not use this website for any illegal activities, including copyright infringement or violation of any platform’s Terms of Service (such as YouTube, Instagram or others).</li>
+    <li>The service is provided “as is”, without any warranties of any kind.</li>
+    <li>We may change, limit or discontinue the service at any time without notice.</li>
+  </ul>
+</section>
+
+<section class="card" id="contact">
+  <h2 class="section-title">Contact Us</h2>
+  <p class="section-text">
+    Have questions, feedback or found an issue? You can contact the Hyper Downloader team using the email address below.
+  </p>
+  <p class="section-text">
+    Email: <a href="mailto:support@hyperdownloader.com" style="color:#93c5fd;text-decoration:none;">support@hyperdownloader.com</a><br>
+    (Replace this email with your own support address if needed.)
+  </p>
+</section>
+
+<section class="card" id="disclaimer">
+  <h2 class="section-title">Disclaimer & Legal Notice</h2>
+  <p class="section-text">
+    Hyper Downloader is an independent tool and is not affiliated with, endorsed by, or in any way officially connected to
+    YouTube, Instagram, Facebook, Twitter, TikTok, Dailymotion or any of their parent companies.
+  </p>
+  <p class="section-text">
+    All trademarks, service marks, trade names, logos and brands are the property of their respective owners.
+    This tool is provided for convenience and educational purposes only. You must always follow the terms of service of each platform
+    and comply with local laws and copyright regulations. If you are unsure whether you are allowed to download certain content,
+    do not download it.
+  </p>
+</section>
 
 <footer>
   <div class="footer-links">
     <a href="#top">Home</a>
     <a href="#how-to-use">How to use</a>
     <a href="#features">Features</a>
-    <a href="/p1">Privacy Policy</a>
-    <a href="/p1">Terms of Service</a>
-    <a href="/p1">Contact</a>
-    <a href="/p1">Disclaimer</a>
+    <a href="#privacy">Privacy Policy</a>
+    <a href="#terms">Terms of Service</a>
+    <a href="#contact">Contact</a>
   </div>
   <div>© 2025 Hyper Downloader — Auto cleanup & responsive UI</div>
 </footer>
@@ -818,7 +875,7 @@ function formatSeconds(s){
 
 function formatMbps(speed_b){
   if(!speed_b || speed_b <= 0) return "0.0 Mbps";
-  const mbps = (speed_b * 8) / 1_000_000;
+  const mbps = (speed_b * 8) / 1000000;
   return mbps.toFixed(1) + " Mbps";
 }
 
@@ -860,52 +917,50 @@ async function poll(){
   }catch(e){msg.textContent="Network error.";etaVal.textContent="--";job=null;}
 }
 
-/* Mobile navbar panel toggle */
-const navToggle = document.getElementById("navToggle");
-const navPanel = document.getElementById("navPanel");
+/* Navbar highlighting + mobile open/close */
+const desktopNavLinks = document.querySelectorAll(".nav-desktop a[href^='#']");
+const mobileNav = document.getElementById("mobileNav");
+const mobileNavLinks = mobileNav.querySelectorAll("a[href^='#']");
+const navLinks = [...desktopNavLinks, ...mobileNavLinks];
 
-if(navToggle && navPanel){
-  navToggle.addEventListener("click", ()=>{
-    const isOpen = navPanel.classList.toggle("open");
-    navToggle.classList.toggle("open", isOpen);
-    navToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
-  });
-
-  // click on link -> close panel on mobile
-  navPanel.addEventListener("click", (e)=>{
-    if(e.target.tagName === "A" || e.target.closest("a")){
-      if(window.innerWidth <= 720){
-        navPanel.classList.remove("open");
-        navToggle.classList.remove("open");
-        navToggle.setAttribute("aria-expanded", "false");
-      }
-    }
-  });
-}
-
-/* Scroll active link (desktop + mobile nav links) */
-const allNavLinks = document.querySelectorAll(".nav-desktop a[href^='#'], .nav-panel a[href^='#']");
-const sections = Array.from(allNavLinks).map(a=>{
+const sections = Array.from(navLinks).map(a=>{
   const id = a.getAttribute("href").slice(1);
-  return {id, el: document.getElementById(id)};
-}).filter(x=>x.el);
+  const el = document.getElementById(id);
+  return el ? {id, el} : null;
+}).filter(Boolean);
 
 window.addEventListener("scroll",()=>{
   let currentId = null;
   const scrollY = window.scrollY + 120;
   for(const s of sections){
-    const rect = s.el.getBoundingClientRect();
-    const top = rect.top + window.scrollY;
+    const top = s.el.offsetTop;
     if(scrollY >= top) currentId = s.id;
   }
   if(currentId){
-    allNavLinks.forEach(a=>a.classList.remove("active"));
-    allNavLinks.forEach(a=>{
-      if(a.getAttribute("href") === "#"+currentId){
-        a.classList.add("active");
-      }
+    navLinks.forEach(a=>a.classList.remove("active"));
+    navLinks.forEach(a=>{
+      if(a.getAttribute("href")==="#"+currentId) a.classList.add("active");
     });
   }
+});
+
+/* mobile toggle */
+const toggleBtn = document.querySelector(".nav-toggle");
+toggleBtn.addEventListener("click", ()=>{
+  const isOpen = mobileNav.classList.contains("open");
+  if(isOpen){
+    mobileNav.classList.remove("open");
+    toggleBtn.classList.remove("open");
+  }else{
+    mobileNav.classList.add("open");
+    toggleBtn.classList.add("open");
+  }
+});
+mobileNavLinks.forEach(a=>{
+  a.addEventListener("click", ()=>{
+    mobileNav.classList.remove("open");
+    toggleBtn.classList.remove("open");
+  });
 });
 </script>
 </body>
@@ -916,12 +971,13 @@ window.addEventListener("scroll",()=>{
 JOBS = {}
 JOBS_LOCK = threading.Lock()
 
+
 class Job:
     def __init__(self):
         self.id = str(uuid.uuid4())
         self.tmp = Path(tempfile.mkdtemp(prefix="mvd_"))
         self.percent = 0
-        self.status = "Processing..."
+        self.status = "queued"
         self.file = None
         self.error = None
         self.speed_bytes = 0.0
@@ -931,18 +987,21 @@ class Job:
         self.downloaded_bytes = 0
         JOBS[self.id] = self
 
+
 URL_RE = re.compile(r"^https?://", re.I)
 _FILENAME_SANITIZE_RE = re.compile(r'[\\/:*?"<>|]')
+
 
 def sanitize_filename(name: str, max_len: int = 240) -> str:
     if not name:
         return "file"
     s = name.strip()
     s = _FILENAME_SANITIZE_RE.sub("_", s)
-    s = re.sub(r'\s+', ' ', s)
+    s = re.sub(r"\s+", " ", s)
     if len(s) > max_len:
         s = s[:max_len].rstrip()
     return s
+
 
 def _build_video_format(video_res):
     if not video_res:
@@ -955,12 +1014,16 @@ def _build_video_format(video_res):
         return "bestvideo[vcodec!=none]+bestaudio/best"
     parts = []
     if res <= 1080:
-        parts.append(f"bestvideo[height<={res}][vcodec!=none][ext=mp4]+bestaudio/best[height<={res}]")
+        parts.append(
+            f"bestvideo[height<={res}][vcodec!=none][ext=mp4]+bestaudio/best[height<={res}]"
+        )
     parts.append(f"bestvideo[height<={res}][vcodec!=none]+bestaudio")
     parts.append("bestvideo+bestaudio/best")
     return "/".join(parts)
 
+
 executor = ThreadPoolExecutor(max_workers=MAX_CONCURRENT)
+
 
 def _find_output_file(tmpdir: Path, prefix_base: str):
     candidates = list(tmpdir.glob(f"{prefix_base}__*"))
@@ -971,12 +1034,15 @@ def _find_output_file(tmpdir: Path, prefix_base: str):
         return None
     return max(files, key=lambda p: p.stat().st_size)
 
+
 def _run_yt_dlp_extract(job: Job, opts: dict, url: str):
     with YoutubeDL(opts) as y:
         y.extract_info(url, download=True)
     return True
 
+
 def run_download(job: Job, url: str, fmt_key: str, filename: str = None, video_res=None, audio_bitrate=None):
+    """Run yt-dlp with ffmpeg-safe fallbacks so it works even when ffmpeg is missing."""
     try:
         if not URL_RE.match(url):
             job.status = "error"
@@ -992,11 +1058,15 @@ def run_download(job: Job, url: str, fmt_key: str, filename: str = None, video_r
         except Exception:
             abitrate = None
 
+        # --- Format selection (ffmpeg aware) ---
         if fmt_key == "audio":
             fmt = "bestaudio[ext=m4a]/bestaudio/best"
-
         else:
-            fmt = _build_video_format(vres)
+            if HAS_FFMPEG:
+                fmt = _build_video_format(vres)
+            else:
+                # No ffmpeg → pick single best stream (no merge)
+                fmt = "best[ext=mp4]/best"
 
         def hook(d):
             try:
@@ -1009,7 +1079,16 @@ def run_download(job: Job, url: str, fmt_key: str, filename: str = None, video_r
                     job.downloaded_bytes = int(downloaded or 0)
                     job.speed_bytes = d.get("speed") or 0
                     if job.total_bytes:
-                        job.percent = int(min(100, max(0, (job.downloaded_bytes * 100) / job.total_bytes)))
+                        job.percent = int(
+                            min(
+                                100,
+                                max(
+                                    0,
+                                    (job.downloaded_bytes * 100)
+                                    / job.total_bytes,
+                                ),
+                            )
+                        )
                 elif st == "finished":
                     job.percent = 100
             except Exception:
@@ -1021,13 +1100,13 @@ def run_download(job: Job, url: str, fmt_key: str, filename: str = None, video_r
                 out = []
                 i = 0
                 while i < len(s):
-                    if s[i] == '%' and i+1 < len(s) and s[i+1] == '(':
-                        j = i+2
-                        while j < len(s) and s[j] != ')':
+                    if s[i] == "%" and i + 1 < len(s) and s[i + 1] == "(":
+                        j = i + 2
+                        while j < len(s) and s[j] != ")":
                             j += 1
                         if j < len(s):
                             out.append(s[i:j+1])
-                            i = j+1
+                            i = j + 1
                             continue
                         else:
                             out.append(s[i:])
@@ -1060,6 +1139,7 @@ def run_download(job: Job, url: str, fmt_key: str, filename: str = None, video_r
         if DEBUG_LOG:
             opts["verbose"] = True
 
+        # post-processing / ffmpeg options
         if fmt_key == "audio":
             if HAS_FFMPEG:
                 pp = {"key": "FFmpegExtractAudio", "preferredcodec": "mp3"}
@@ -1100,12 +1180,12 @@ def run_download(job: Job, url: str, fmt_key: str, filename: str = None, video_r
                 job.error = "No output file produced"
                 if DEBUG_LOG:
                     print(f"[ERROR] job {job.id} - no output file found in {job.tmp}")
-
     except Exception as e:
         job.status = "error"
         job.error = str(e)[:400]
         if DEBUG_LOG:
             print(f"[ERROR] run_download unexpected: {repr(e)}")
+
 
 @app.post("/start")
 def start():
@@ -1121,6 +1201,7 @@ def start():
         d.get("audio_bitrate"),
     )
     return jsonify({"job_id": job.id})
+
 
 @app.post("/info")
 def info():
@@ -1138,6 +1219,7 @@ def info():
         if DEBUG_LOG:
             print("[DEBUG] preview failed:", repr(e))
         return jsonify({"error": "Preview failed", "detail": str(e)[:400]}), 400
+
 
 @app.get("/progress/<id>")
 def progress(id):
@@ -1163,6 +1245,7 @@ def progress(id):
         "eta_seconds": eta_seconds
     })
 
+
 @app.get("/fetch/<id>")
 def fetch(id):
     j = JOBS.get(id)
@@ -1174,6 +1257,7 @@ def fetch(id):
     j.status = "downloaded"
     return send_file(j.file, as_attachment=True, download_name=os.path.basename(j.file))
 
+
 @app.get("/env")
 def env():
     return jsonify({
@@ -1183,6 +1267,7 @@ def env():
         "prefix": APP_PREFIX,
         "max_concurrent": MAX_CONCURRENT
     })
+
 
 def cleanup_worker():
     while True:
@@ -1206,14 +1291,10 @@ def cleanup_worker():
                 print("[cleanup] error:", repr(e))
         time.sleep(CLEANUP_INTERVAL)
 
+
 threading.Thread(target=cleanup_worker, daemon=True).start()
 
-
-
-@app.get("/p1")
-def p1():
-    return send_file("pages/p1.html")
-
+# ----- SEO ROUTES (SITEMAP + ROBOTS) -----
 
 
 @app.get("/sitemap.xml")
@@ -1229,6 +1310,7 @@ def sitemap():
 """
     return xml, 200, {"Content-Type": "application/xml"}
 
+
 @app.get("/robots.txt")
 def robots():
     txt = """User-agent: *
@@ -1238,9 +1320,11 @@ Sitemap: https://yt-downloader-s52z.onrender.com/sitemap.xml
 """
     return txt, 200, {"Content-Type": "text/plain"}
 
+
 @app.get("/")
 def home():
     return render_template_string(HTML)
+
 
 if __name__ == "__main__":
     if DEBUG_LOG:
