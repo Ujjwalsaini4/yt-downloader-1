@@ -1323,7 +1323,7 @@ def sitemap():
     xml = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://yt-downloader-s52z.onrender.com/</loc>
+    <loc>https://yt-downloader-1-3o61.onrender.com/</loc>
     <priority>1.0</priority>
     <changefreq>daily</changefreq>
   </url>
@@ -1337,7 +1337,7 @@ def robots():
     txt = """User-agent: *
 Allow: /
 
-Sitemap: https://yt-downloader-s52z.onrender.com/sitemap.xml
+Sitemap: https://yt-downloader-1-3o61.onrender.com/sitemap.xml
 """
     return txt, 200, {"Content-Type": "text/plain"}
 
