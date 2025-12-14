@@ -70,7 +70,7 @@ HTML = """<!doctype html>
 
 <!-- Indexing & canonical -->
 <meta name="robots" content="index,follow" />
-<link rel="canonical" href="https://yt-downloader-s52z.onrender.com/" />
+<link rel="canonical" href="https://yt-downloader-1-3o61.onrender.com/" />
 
 <!-- Open Graph (social share) -->
 <meta property="og:title" content="YouTube & Instagram Video Downloader Online | Hyper Downloader">
